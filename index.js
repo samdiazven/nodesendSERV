@@ -1,5 +1,7 @@
 const express = require('express');
 const conectarDB = require('./config/db');
+const cors = require('cors');
+
 
 ///Crear el servidor
 
@@ -8,12 +10,20 @@ const app = express();
 //Conectar a la DB
 
   conectarDB();
+  ///CORS
+  const opcionesCors = {
+    origin: process.env.FRONTEND_URL
+  }
+  app.use(cors(opcionesCors));
 
 //Puerto de la app
 
 const port = process.env.PORT || 4000;
 //Habilitar Json
 app.use(express.json());
+
+//////Habilitar carpeta publica
+app.use(express.static('uploads'));
 ////Rutas de la app
 
 app.use('/api/usuarios', require('./routes/usuarios'));

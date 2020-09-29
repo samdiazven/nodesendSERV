@@ -12,11 +12,11 @@ exports.nuevoEnlace = async (req, res, next)=>{
 
 
   ///Almacenar Datos
-  const {nombre_original, password} = req.body;
+  const {nombre_original, password, nombre} = req.body;
   
   const enlace =  new Enlaces();
   enlace.url = shortid.generate();
-  enlace.nombre =  shortid.generate();
+  enlace.nombre = nombre;
   enlace.password = password;
   enlace.nombre_original = nombre_original;
 
@@ -43,6 +43,32 @@ exports.nuevoEnlace = async (req, res, next)=>{
     }
 }
 
+
+
+exports.todosEnlaces = async (req, res, next) =>{
+
+  try{
+      const enlaces = await Enlaces.find({}).select('url -_id');
+      res.json({enlaces});
+  }catch(error){
+    console.log(error);
+
+  }
+}
+exports.tienePassword = async (req,res, next) =>{
+   //Verificar el enlace
+  const enlace = await Enlaces.findOne({url: req.params.url});
+  if(!enlace){
+    res.status(404).json({msg: "Ese enlace no existe"});
+    return next();
+  }  
+    if(enlace.password){
+
+      return res.json({password: true, enlace: enlace.url})
+
+    }
+      next();
+  }
 exports.obtenerEnlace = async (req, res, next)=>{
     
   //Verificar el enlace
@@ -51,22 +77,23 @@ exports.obtenerEnlace = async (req, res, next)=>{
     res.status(404).json({msg: "Ese enlace no existe"});
     return next();
   }
-  res.json({archivo: enlace.nombre});
-
-  //Si las descargas son iguales a 1 borrar la entrada y el archivo
-  const {descargas, nombre} = enlace;
-  if(descargas === 1){
-    req.archivo = nombre;
-
-    //Eliminar entrada de la base de datos
-    await Enlaces.findOneAndRemove(req.params.url);
-
-    //Pasar al siguiente controladir
-    next();
-  }else{
-    enlace.descargas--;
-    await enlace.save();
-  }
+  res.json({archivo: enlace.nombre, password: false});
+  
+  next();
+  
 
   //Restarle un numero a las descargas
+}
+
+exports.verificarPassword = async(req, res, next) =>{
+  const {url} = req.params;
+  const {password} = req.body;
+  const enlace = await Enlaces.findOne({ url });
+
+  if(bcrypt.compareSync(password, enlace.password)){
+        next();
+  }else{
+
+    res.status(404).json({msg: 'Password Incorrecto'});
+  }
 }
